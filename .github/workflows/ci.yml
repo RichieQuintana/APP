@@ -1,5 +1,8 @@
 name: CI - Python App
 
+permissions:
+  contents: write   # 💥 Esto permite push al repo infra usando GITHUB_TOKEN
+
 on:
   push:
     branches: [ "main" ]
@@ -8,10 +11,8 @@ jobs:
   build:
     runs-on: ubuntu-latest
 
-    permissions:
-      contents: write
-
     steps:
+
     - name: Checkout código
       uses: actions/checkout@v3
 
@@ -19,21 +20,31 @@ jobs:
       run: echo "${{ secrets.DOCKER_PASS }}" | docker login -u "${{ secrets.DOCKER_USER }}" --password-stdin
 
     - name: Build imagen Docker
-      run: docker build -t richieq/app:${{ github.sha }} .
+      run: docker build -t richiequintana/app:${{ github.sha }} .
 
-    - name: Push imagen
-      run: docker push richieq/app:${{ github.sha }}
+    - name: Push imagen Docker
+      run: docker push richiequintana/app:${{ github.sha }}
 
     - name: Actualizar repo INFRA
       env:
-        TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        TOKEN: ${{ secrets.GITHUB_TOKEN }}  # 💥 Usamos solo GITHUB_TOKEN, sin tokens personales
       run: |
+        echo "🔄 Clonando repositorio INFRA..."
         git clone https://github.com/RichieQuintana/infra-proyecto-CI.git
         cd infra-proyecto-CI
+
+        echo "✏️ Actualizando versión de la imagen en deployment.yaml..."
         sed -i "s|image: .*|image: richieq/app:${{ github.sha }}|" k8s/deployment.yaml
+
+        echo "📝 Configurando git..."
         git config user.name "github-actions"
         git config user.email "actions@github.com"
+
         git add k8s/deployment.yaml
         git commit -m "Actualizando deployment con nueva imagen" || echo "Sin cambios"
+
+        echo "🔐 Configurando remote con GITHUB_TOKEN..."
         git remote set-url origin https://x-access-token:${TOKEN}@github.com/RichieQuintana/infra-proyecto-CI.git
+
+        echo "🚀 Haciendo push a infra-proyecto-CI..."
         git push
