@@ -1,8 +1,5 @@
 name: CI - Python App
 
-permissions:
-  contents: write   # 💥 Esto permite push al repo infra usando GITHUB_TOKEN
-
 on:
   push:
     branches: [ "main" ]
@@ -27,24 +24,20 @@ jobs:
 
     - name: Actualizar repo INFRA
       env:
-        TOKEN: ${{ secrets.GITHUB_TOKEN }}  # 💥 Usamos solo GITHUB_TOKEN, sin tokens personales
+        PAT: ${{ secrets.GH_PAT }}
       run: |
-        echo "🔄 Clonando repositorio INFRA..."
-        git clone https://github.com/RichieQuintana/infra-proyecto-CI.git
+        echo "🔄 Clonando repo infra..."
+        git clone https://x-access-token:${PAT}@github.com/RichieQuintana/infra-proyecto-CI.git
         cd infra-proyecto-CI
 
-        echo "✏️ Actualizando versión de la imagen en deployment.yaml..."
+        echo "✏️ Actualizando deployment..."
         sed -i "s|image: .*|image: richieq/app:${{ github.sha }}|" k8s/deployment.yaml
 
-        echo "📝 Configurando git..."
-        git config user.name "github-actions"
         git config user.email "actions@github.com"
+        git config user.name "github-actions"
 
         git add k8s/deployment.yaml
-        git commit -m "Actualizando deployment con nueva imagen" || echo "Sin cambios"
+        git commit -m "Actualizando deployment con imagen nueva" || echo "Sin cambios"
 
-        echo "🔐 Configurando remote con GITHUB_TOKEN..."
-        git remote set-url origin https://x-access-token:${TOKEN}@github.com/RichieQuintana/infra-proyecto-CI.git
-
-        echo "🚀 Haciendo push a infra-proyecto-CI..."
-        git push
+        echo "🚀 Haciendo push..."
+        git push https://x-access-token:${PAT}@github.com/RichieQuintana/infra-proyecto-CI.git
