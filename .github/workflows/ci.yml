@@ -17,10 +17,10 @@ jobs:
 
 
     - name: Build imagen Docker
-      run: docker build -t richiequintana/app:${{ github.sha }} .
+      run: docker build -t richieq/app:${{ github.sha }} .
 
     - name: Push imagen
-      run: docker push richiequintana/app:${{ github.sha }}
+      run: docker push richieq/app:${{ github.sha }}
 
     - name: Actualizar repo INFRA
       run: |
